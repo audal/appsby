@@ -3,6 +3,7 @@ import {GenericQuery} from "./fauna/GenericQuery";
 import {GenerateIndexName} from "./fauna/GenerateIndex";
 import {GetTerms} from "./fauna/GetTerms";
 import {FaunaDocToAppsbyDoc} from "./fauna/FaunaDocToAppsbyDoc";
+import {CreateClient} from "./fauna/CreateClient";
 
 
 
@@ -153,4 +154,18 @@ export async function AppsbyGetMultipleDocumentsFromSearch(documentType, fieldsT
     } else if (result.code === 404) {
         return null;
     }
+}
+
+export async function AppsbyCreateChildDatabase(name) {
+
+    let client = await CreateClient();
+    return client.query(q.CreateDatabase({name: name}))
+
+}
+
+export async function AppsbyCreateChildDatabaseKey(name, role = 'server') {
+
+    let client = await CreateClient();
+    let runQuery = await client.query(q.CreateKey({role: role, database: q.Database(name)}))
+    return runQuery.secret;
 }

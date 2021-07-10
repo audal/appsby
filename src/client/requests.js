@@ -1,5 +1,5 @@
 import cachios from 'cachios';
-import {AppsbyGlobalState} from "./auth";
+import {getAccessToken, logout, getDeviceId, setAccessToken, runAuthConnectors} from "./auth";
 import axios from 'axios';
 
 let a = axios.create();
@@ -89,12 +89,13 @@ export function InvalidateCacheAndCreateNew() {
     cacher = cachios.create(instance);
 }
 
-export async function DeliverRequest(toSend, masterEndpoint, shouldBackgroundRefresh = false, ttlInMinutes = 2, useCacheIfAvailable = true) {
+export async function DeliverRequest(toSend, masterEndpoint, shouldBackgroundRefresh = false, ttlInMinutes = 2, useCacheIfAvailable = true, withExtraHeaders = {}) {
 
     const config = {
         headers: {
-            Authorization: AppsbyGlobalState.getAccessToken(),
-            Endpoint: masterEndpoint
+            Authorization: await getAccessToken(),
+            Endpoint: masterEndpoint,
+            ...withExtraHeaders
         },
         ttl: ttlInMinutes * 60,
         force: !useCacheIfAvailable,
@@ -113,10 +114,11 @@ export async function DeliverRequest(toSend, masterEndpoint, shouldBackgroundRef
 
                     if (result.status === 200) {
                         if (typeof result.data.token === "string"){
-                            AppsbyGlobalState.setAccessToken(result.data.token);
+                            setAccessToken(result.data.token);
                             if (result.data.reauthenticated) {
                                 InvalidateCacheAndCreateNew();
-                                AppsbyGlobalState.setState({isAuthenticated: true})
+                                global.isAuthenticated = true;
+                                runAuthConnectors();
                                 global.viewConnectors.forEach((connection) => {
                                     connection.connect();
                                 })
@@ -125,24 +127,24 @@ export async function DeliverRequest(toSend, masterEndpoint, shouldBackgroundRef
                                 })
                             }
                         }
-                        return { success: true, result: result.data.data }
+                        return { success: true, result: result.data.data, response: result.status }
                     }
                 })
                 .catch(result => {
 
                     if (result.response.status === 401) {
-                        AppsbyGlobalState.signOut()
-                        return { success: false, result: "Please login again" }
+                        logout()
+                        return { success: false, result: "Please login again", response: result.response.status }
                     } else if (result.response.status === 412){
                         return { success: false, result: "Unable to connect to cross-domain resource." }
                     } else {
 
                         if (result.response && result.response.data && result.response.data.errorMessage) {
-                            return { success: false, result: result.response.data.errorMessage }
+                            return { success: false, result: result.response.data.errorMessage, response: result.response.status  }
                         } else if (result.response && result.response.statusText) {
-                            return { success: false, result: result.response.statusText }
+                            return { success: false, result: result.response.statusText, response: result.response.status  }
                         } else {
-                            return { success: false, result: "Your internet connection may be offline. Check it and refresh this page."}
+                            return { success: false, result: "Your internet connection may be offline. Check it and refresh this page." }
                         }
                     }
                 })
@@ -151,7 +153,7 @@ export async function DeliverRequest(toSend, masterEndpoint, shouldBackgroundRef
         }
     }
 
-    toSend.deviceId = await AppsbyGlobalState.getDeviceId();
+    toSend.deviceId = await getDeviceId();
 
     try {
         return await RetryStrategy();
@@ -161,9 +163,10 @@ export async function DeliverRequest(toSend, masterEndpoint, shouldBackgroundRef
 }
 
 
-export async function ExternalRequest(method, toSend, endpoint, shouldBackgroundRefresh = false, ttlInMinutes = 2, useCacheIfAvailable = true) {
+export async function ExternalRequest(method, toSend, endpoint, shouldBackgroundRefresh = false, ttlInMinutes = 2, useCacheIfAvailable = true, withExtraHeaders = {}) {
 
     const config = {
+        headers: withExtraHeaders,
         ttl: ttlInMinutes * 60,
         force: !useCacheIfAvailable,
         retry: 10, retryDelay: 1500
@@ -174,25 +177,20 @@ export async function ExternalRequest(method, toSend, endpoint, shouldBackground
 
         try {
 
-            return cacher[method.toLowerCase()](endpoint, toSend, config)
+            return  cacher.request({url: endpoint, data: toSend, method: method.toLowerCase(), ...config })
                 .then(result => {
                     if (result.status === 200) {
-                        return { success: true, result: result.data }
+                        return { success: true, result: result.data, response: result.status }
                     }
                 })
                 .catch(result => {
 
-                    if (result.response.status === 401) {
-                        AppsbyGlobalState.signOut()
-                        return { success: false, result: "Unauthorized." }
+                    if (result.response && result.response.data && result.response.data) {
+                        return { success: false, result: result.response.data, response: result.response.status }
                     } else {
-
-                        if (result.response && result.response.data && result.response.data) {
-                            return { success: false, result: result.response.data }
-                        } else {
-                            return { success: false, result: "Your internet connection may be offline. Check it and refresh this page."}
-                        }
+                        return { success: false, result: "Your internet connection may be offline. Check it and refresh this page." }
                     }
+
                 })
         } catch (e) {
             return { success: false, result: "" };

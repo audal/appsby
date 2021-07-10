@@ -1,8 +1,5 @@
 import {DeliverRequest} from "./requests";
 
-var Axios = require ("axios");
-var { AppsbyGlobalState } = require("./auth");
-
 export async function SearchRequest(endpoint, connectionParameters, query, count, before, after, shouldBackgroundRefresh, ttlInMinutes, useCacheIfAvailable) {
 
     let toSend = {};

@@ -5,7 +5,7 @@ import {
     AppsbyGetSingleDocument
 } from "./fauna-functions";
 import {shortUrlDecode} from "./ShortURL";
-import {SetDocument} from "../handlers/handle-document";
+import {SetDocument} from "./SetDocument";
 import sc from './string-crypto'
 // eslint-disable-next-line import/prefer-default-export
 

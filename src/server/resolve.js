@@ -110,19 +110,38 @@ export async function resolve(event) {
   } catch (e) {
     if (event.httpMethod === "GET"){
       return sendProxyErrorDynamicPage(e)
+    } else if (event.httpMethod === "OPTIONS") {
+      return sendOptions();
     } else {
       return sendProxyError(e)
     }
   }
 }
 
+const sendOptions = () => {
+  const response =  {
+    statusCode: 200,
+    headers: {
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type, endpoint',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Max-Age': '86400'
+    },
+  };
+  return response;
+};
+
 const sendProxySuccessRedirect = (responseObj) => {
   const response = responseObj && responseObj.statusCode ? responseObj : {
     statusCode: 301,
     headers: {
       Location: responseObj,
+      'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, GET',
+      'Access-Control-Allow-Headers': 'authorization, content-type, endpoint',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Max-Age': '86400'
     },
   };
   return response;
@@ -132,17 +151,11 @@ const sendProxySuccess = (responseObj) => {
 
   let u = uuidv4();
   let cookieHeader;
-
-  console.log("trying to success this");
-
-  console.log(responseObj);
-
-
   if (typeof responseObj.token === "string") {
-    cookieHeader = [`_appsbyToken=${responseObj.token}; Domain=${process.env.websiteAddress}; Max-Age=900; Secure; HttpOnly; SameSite=None; Path=/`, `_appsbyXSRF=${u}; Max-Age=0; Domain=${process.env.websiteAddress}; Secure; SameSite=None; Path=/`]
+    cookieHeader = `_appsbyToken=${responseObj.token}; Domain=${process.env.websiteAddress}; Max-Age=900; Secure; HttpOnly; SameSite=None; Path=/`
     responseObj.token = u;
   } else if (typeof responseObj === "string") {
-    cookieHeader = [`_appsbyToken=${responseObj}; Domain=${process.env.websiteAddress}; Max-Age=900; Secure; HttpOnly; SameSite=None; Path=/`, `_appsbyXSRF=${u}; Max-Age=0; Domain=${process.env.websiteAddress}; Secure; SameSite=None; Path=/`]
+    cookieHeader = `_appsbyToken=${responseObj}; Domain=${process.env.websiteAddress}; Max-Age=900; Secure; HttpOnly; SameSite=None; Path=/`
     responseObj = u;
   }
 
@@ -151,8 +164,11 @@ const sendProxySuccess = (responseObj) => {
     body: JSON.stringify(responseObj),
     headers: {
       'Content-Type': 'application/json',
+      'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, GET',
+      'Access-Control-Allow-Headers': 'authorization, content-type, endpoint',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Max-Age': '86400'
     },
   };
   if(cookieHeader) {
@@ -165,15 +181,18 @@ const sendProxySuccess = (responseObj) => {
 const sendProxyLogout = () => {
 
   let u = uuidv4();
-  let cookieHeader = [`_appsbyToken=${u}; Expires=; Domain=${process.env.websiteAddress}; Max-Age=0; expires=Sat, 1-Jan-72 00:00:00 GMT; Secure; HttpOnly; SameSite=None; Path=/`, `_appsbyXSRF=${u}; Max-Age=0; Domain=${process.env.websiteAddress}; Secure; SameSite=None; Path=/`]
+  let cookieHeader = `_appsbyToken=${u}; Expires=; Domain=${process.env.websiteAddress}; Max-Age=0; expires=Sat, 1-Jan-72 00:00:00 GMT; Secure; HttpOnly; SameSite=None; Path=/`
 
   const response =  {
     statusCode: 200,
-    body: {},
+    body: "",
     headers: {
       'Content-Type': 'application/json',
+      'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, GET',
+      'Access-Control-Allow-Headers': 'authorization, content-type, endpoint',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Max-Age': '86400'
     },
   };
   if(cookieHeader) {
@@ -198,12 +217,16 @@ const sendProxyError = (err) => {
     body: JSON.stringify({ errorMessage: message }),
     headers: {
       'Content-Type': 'application/json',
+      'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type, endpoint',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Max-Age': '86400'
     },
   };
 
   let u = uuidv4();
-  let cookieHeader = [`_appsbyToken=${u}; Expires=; Domain=${process.env.websiteAddress}; Max-Age=0; expires=Sat, 1-Jan-72 00:00:00 GMT; Secure; HttpOnly; SameSite=None; Path=/`, `_appsbyXSRF=${u}; Max-Age=0; Domain=${process.env.websiteAddress}; Secure; SameSite=None; Path=/`]
+  let cookieHeader = `_appsbyToken=${u}; Expires=; Domain=${process.env.websiteAddress}; Max-Age=0; expires=Sat, 1-Jan-72 00:00:00 GMT; Secure; HttpOnly; SameSite=None; Path=/`
   if(status === 401) {
     response.headers['Set-Cookie'] = cookieHeader;
   }
@@ -217,7 +240,11 @@ const sendProxySuccessDynamicPage = (responseObj) => {
     body: responseObj,
     headers: {
       'Content-Type': 'text/html',
+      'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type, endpoint',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Max-Age': '86400'
     },
   };
   return response;
@@ -250,7 +277,11 @@ const sendProxyErrorDynamicPage = (err) => {
 </body></html>`,
     headers: {
       'Content-Type': 'text/html',
+      'Connection': 'keep-alive',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, content-type, endpoint',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Max-Age': '86400'
     },
   };
   return response;

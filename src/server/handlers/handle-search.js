@@ -28,25 +28,25 @@ async function ProcessSearch(ViewInterpreter, query, headers, count, cursor, cur
 async function retrieveSearch(searchModule) {
 
   let documents = [];
-  const items = searchModule.props.documents.documents;
+  let items = searchModule.props.documents;
 
-  if (items === null) { return { documents: [] }; }
+  if (items === null) { return { documents: [] }; } else { items = items.documents }
 
-  items.forEach((doc) => {
+  for (const doc of items) {
     searchModule.state = doc.document;
     searchModule.documentId = doc.documentId;
     searchModule.documentType = doc.documentType
     searchModule.faunaDocumentRef = doc.faunaDocumentRef;
 
-    const t = searchModule.render();
-    t.id = doc.documentId;
+    const t = await searchModule.render();
+    t.appsbyDocumentId = doc.documentId;
     //t.ShowAllToken = "SHOW_ALL_TOKEN";
 
     documents.push(t);
-  });
+  }
 
 
-  return { documents: documents, before: searchModule.documents.before, after: searchModule.documents.after };
+  return { documents: documents, before: searchModule.props.documents.before, after: searchModule.props.documents.after };
 
   /*let index;
 

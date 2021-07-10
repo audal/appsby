@@ -1,6 +1,4 @@
 import {DeliverRequest} from "./requests";
-var Axios = require ("axios");
-var { AppsbyGlobalState } = require("./auth");
 
 export async function APIRequest(endpoint, connectionParameters, data) {
 
